@@ -1,0 +1,308 @@
+---
+title: "Problem Set 1"
+author: "Sanskar Bachani"
+date: "`r Sys.Date()`"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+library(tidyverse)
+```
+
+### Introduction
+
+This problem set is designed to test your understanding of data wrangling concepts using the **`tidyverse`**, specifically **`dplyr`** and **`tidyr`**, as well as foundational R concepts. You'll primarily work with the `mtcars`, a simulated sales dataset, and new simulated student demographic/grade datasets, applying core verbs and functions to prepare data for analysis. This activity should take approximately 60 minutes.
+
+### Instructions
+
+* Read each task carefully.
+* Write your R code in the provided code chunks.
+* Run the code to see your output and verify your results.
+* `mtcars` is a built-in R dataset (or part of the `tidyverse` installation).
+
+---
+
+## Part 0: R Fundamentals (10 minutes)
+
+This section will test your understanding of basic R syntax, data types, and vector operations.
+
+### Task 0.1: Data Types and Logical Operations
+
+1.  Create a variable `course_name` and assign it the string `"Introduction to Data Science"`.
+2.  Create a variable `num_students` and assign it the integer value `45`.
+3.  Check the data type (`class()`) of `course_name` and `num_students`.
+4.  Create a numeric variable `pi_value` with the value $3.14159$.
+5.  Create a logical variable `is_active` and set it to `TRUE`.
+6.  Evaluate the following logical expressions and print their results:
+    * Is `num_students` greater than or equal to `50`?
+    * Is `course_name` exactly equal to `"introduction to data science"` (case-sensitive)?
+
+```{r}
+course_name <- "Introduction to Data Science"
+num_students <- 45
+class(course_name)
+class(num_students)
+pi_value <- 3.14159
+is_active <- TRUE
+num_students >= 50
+course_name == "introduction to data science"
+```
+
+---
+
+### Task 0.2: Working with Vectors
+
+1.  Create a numeric vector named `temperatures` with the values $22, 25, 19, 28, 23$.
+2.  Calculate the `sum()` and `mean()` of the `temperatures` vector.
+3.  Add a new temperature, $30$, to the `temperatures` vector (re-assign the variable).
+4.  Create a new logical vector named `is_hot` that is `TRUE` for temperatures greater than $25$ and `FALSE` otherwise.
+
+```{r}
+temperatures <- c(22, 25, 19, 28, 23)
+sum(temperatures)
+mean(temperatures)
+temperatures <- c(temperatures, 30)
+is_hot <- temperatures > 25
+temperatures
+is_hot
+
+```
+
+---
+
+## Part 1: `dplyr` Fundamentals with `mtcars` (25 minutes)
+
+This section focuses on applying core `dplyr` verbs to the classic `mtcars` dataset. The `mtcars` dataset contains information about various car models from 1973-74.
+
+### Task 1.1: Filtering and Arranging
+
+1.  The `mtcars` dataset has been pre-processed for you to include `car_model` as a column.
+2.  Filter the dataset to include only cars with `cyl` (number of cylinders) equal to `4` or `6` AND `mpg` (miles per gallon) greater than `20`.
+3.  Arrange the results first by `mpg` in ascending order, and then by `cyl` in descending order.
+
+```{r}
+library(dplyr)
+result <- mtcars %>%
+  filter((cyl == 4 | cyl == 6) & mpg > 20) %>% 
+  arrange(mpg, desc(cyl))                       
+result
+```
+
+### Short Answer
+Based on your filtered and arranged results, briefly describe the characteristics of the cars that appear at the top of your output. What does this tell you about the relationship between cylinders and miles per gallon in this subset?
+
+The cars at the top are 6-cylinder models with mpg values just above 20, followed by 4-cylinder cars with slightly higher mpg.
+This suggests that in this subset, fewer cylinders are associated with better fuel efficiency.
+---
+
+### Task 1.2: Mutating and Selecting
+
+Using the `mtcars_processed` dataset:
+
+1.  Create a new column `hp_per_wt` by dividing `hp` (horsepower) by `wt` (weight in 1000 lbs).
+2.  Create another new column `qsec_category` based on `qsec` (1/4 mile time):
+    * `"Fast"` if `qsec < 17`
+    * `"Medium"` if `qsec >= 17` and `qsec < 19`
+    * `"Slow"` if `qsec >= 19`
+3.  Select only the `car_model`, `mpg`, `hp`, `wt`, `hp_per_wt`, and `qsec_category` columns.
+
+```{r}
+library(dplyr)
+
+result <- mtcars_processed %>%
+  mutate(
+    hp_per_wt = hp / wt,
+    qsec_category = case_when(
+      qsec < 17 ~ "Fast",
+      qsec >= 17 & qsec < 19 ~ "Medium",
+      qsec >= 19 ~ "Slow"
+    )
+  ) %>%
+  select(car_model, mpg, hp, wt, hp_per_wt, qsec_category)
+
+result
+```
+
+### Short Answer
+Why might creating `hp_per_wt` and `qsec_category` be useful metrics when analyzing car performance, beyond just raw horsepower and weight?
+
+hp_per_wt normalizes horsepower by weight, giving a clearer picture of power efficiency relative to car size.
+qsec_category simplifies acceleration performance into meaningful groups, making comparisons between cars more intuitive.
+---
+
+### Task 1.3: Grouped Summaries
+
+Using the `mtcars_processed` dataset:
+
+1.  Group the data by `cyl` (number of cylinders) and `am` (transmission type: 0 for automatic, 1 for manual).
+2.  For each group, calculate the **average `mpg`**, the **median `hp`**, and the **number of cars** (`n()`).
+3.  Arrange the final result first by `cyl` (ascending) and then by `average_mpg` (descending).
+
+```{r}
+library(dplyr)
+
+result <- mtcars_processed %>%
+  group_by(cyl, am) %>%
+  summarise(
+    average_mpg = mean(mpg, na.rm = TRUE),
+    median_hp   = median(hp, na.rm = TRUE),
+    num_cars    = n()
+  ) %>%
+  arrange(cyl, desc(average_mpg))
+
+result
+```
+
+### Short Answer
+Based on your grouped summary, what general trends do you observe regarding average `mpg` and median `hp` across different combinations of `cylinders` and `transmission` types? How do these summaries help differentiate car characteristics?
+
+Cars with fewer cylinders (4) have higher mpg but lower horsepower, while 8-cylinder cars show the opposite trend.
+Manual transmissions usually improve mpg within each cylinder group, helping distinguish cars focused on efficiency versus raw power
+---
+
+## Part 2: Reshaping and Joining Data (25 minutes)
+
+For this part, we'll explore reshaping and joining using a simulated sales dataset and new simulated student enrollment data.
+
+**Run this code chunk first to set up the data:**
+
+```{r, echo = TRUE}
+# Part 2 Data Setup
+product_sales_wide <- tibble(
+  product = c("Laptop", "Monitor", "Keyboard"),
+  `2020` = c(1000, 500, 800),
+  `2021` = c(1100, 550, 850),
+  `2022` = c(1250, 600, 900)
+) %>%
+  rename(Year_2020 = `2020`, Year_2021 = `2021`, Year_2022 = `2022`) # Rename to avoid issues with non-syntactic names
+
+# Simulated Student and Grade Data
+students_demographics <- tibble(
+  student_id = c("S001", "S002", "S003", "S004", "S005", "S007"), # S007 is a new student, no grades yet
+  student_name = c("Alice", "Bob", "Charlie", "David", "Eve", "Frank"),
+  major = c("CS", "Math", "Physics", "CS", "Biology", "History"),
+  enrollment_year = c(2020, 2021, 2020, 2022, 2021, 2023)
+)
+
+student_grades <- tibble(
+  student_id = c("S001", "S002", "S003", "S001", "S006", "S004"), # S006 has grades but no demographic info
+  course_id = c("CS101", "MA201", "PH301", "CS102", "BI101", "CS205"),
+  semester = c("Fall 2020", "Spring 2022", "Fall 2021", "Spring 2021", "Fall 2021", "Spring 2023"),
+  grade_score = c(92, 85, 88, 78, 75, 90) # Assuming numeric scores for easier calculation
+)
+
+# Display the dataframes
+print(product_sales_wide)
+print(students_demographics)
+print(student_grades)
+```
+
+---
+
+### Task 2.1: New Variable Creation: Wide vs. Long (`product_sales` dataset)
+
+This task demonstrates how creating new variables that depend on previous time periods is much easier in a long (tidy) format.
+
+1.  **Analysis in Wide Format:** Using the `product_sales_wide` dataset, create new columns for the **year-over-year growth rate** for 2021 and 2022.
+    * `Growth_2021`: `(Year_2021 - Year_2020) / Year_2020 * 100`
+    * `Growth_2022`: `(Year_2022 - Year_2021) / Year_2021 * 100`
+
+```{r}
+product_sales_wide <- product_sales_wide %>%
+  mutate(
+    Growth_2021 = (Year_2021 - Year_2020) / Year_2020 * 100,
+    Growth_2022 = (Year_2022 - Year_2021) / Year_2021 * 100
+  )
+
+print(product_sales_wide)
+```
+
+2.  **Reshape to Long Format:** Reshape `product_sales_wide` into a long format called `product_sales_long`. Pivot the year columns (`Year_2020`, `Year_2021`, `Year_2022`) into two new columns: `Year` and `Sales`. Make sure `Year` is numeric.
+
+```{r}
+product_sales_long <- product_sales_wide %>%
+  pivot_longer(
+    cols = starts_with("Year_"),
+    names_to = "Year",
+    values_to = "Sales"
+  ) %>%
+  mutate(Year = as.numeric(gsub("Year_", "", Year)))
+
+print(product_sales_long)
+```
+3.  **Analysis in Long Format:** Using the `product_sales_long` dataset, calculate a single `Growth_Rate` column that represents the year-over-year growth for each product. You should use `group_by()` and `lag()`. The formula for growth rate is `(current_year_sales - previous_year_sales) / previous_year_sales * 100`.
+
+```{r}
+product_sales_long <- product_sales_long %>%
+  group_by(Product) %>%
+  arrange(Year) %>%
+  mutate(Growth_Rate = (Sales - lag(Sales)) / lag(Sales) * 100)
+
+print(product_sales_long)
+```
+
+### Short Answer
+Compare the code required to calculate the year-over-year growth rate in the wide format versus the long format. Which approach is more concise and scalable if you had many more years of data? Why is the long format generally preferred for this type of time-series calculation?
+
+---
+
+### Task 2.2: Mutating Joins: Student Demographics and Grades
+
+This task explores combining student demographic information with their academic performance. Pay close attention to how different join types handle students who may or may not have corresponding grade records.
+
+1.  **Inner Join:** Perform an `inner_join()` to combine `students_demographics` with `student_grades` based on `student_id`. This will show students who have **both** demographic information and at least one grade record.
+2.  **Left Join:** Perform a `left_join()` to combine `students_demographics` (left table) with `student_grades` based on `student_id`. This will keep **all students** from the demographic data and add their grade records where available.
+3.  **Advanced Mutate (after Left Join):** After performing the left join, calculate the **average `grade_score` for each student**. This will require grouping by `student_id` and `student_name`.
+
+```{r}
+# Inner join: students with grades
+inner_result <- inner_join(students_demographics, student_grades, by = "student_id")
+print(inner_result)
+
+# Left join: all students, with grades where available
+left_result <- left_join(students_demographics, student_grades, by = "student_id")
+print(left_result)
+
+# Average grade per student
+avg_grades <- left_result %>%
+  group_by(student_id, student_name) %>%
+  summarise(avg_grade = mean(grade_score, na.rm = TRUE))
+print(avg_grades)
+```
+
+### Short Answer
+Compare the number of rows and the content of the `inner_join()` and `left_join()` results. Specifically, identify which student(s) are present in one join but not the other, and explain why. What does the average grade calculation reveal about students with multiple grades or no grades?
+
+---
+inner_join() includes only students with grades, while left_join() keeps all students, filling NA for those without grades. The avg_grade shows the mean for students with multiple grades and NA for those with none
+
+### Task 2.3: Filtering Joins: Identifying Student Enrollment Status
+
+This task focuses on using filtering joins to identify different categories of students based on their enrollment and grade records.
+
+1.  **Enrolled Students:** Use a `semi_join()` to identify which students from `students_demographics` are actually enrolled in and have a grade record in `student_grades`. This should return only columns from `students_demographics`.
+2.  **Students Without Grades:** Use an `anti_join()` to identify which students from `students_demographics` are in the system but currently do *not* have any grade records in `student_grades` (e.g., new students, or those who haven't completed courses yet). This should return only columns from `students_demographics`.
+3.  **Grades Without Students:** Use an `anti_join()` to identify any grade records in `student_grades` that do *not* correspond to an existing student in `students_demographics` (e.g., a data entry error or a record for a past student no longer in the demographic system). This should return only columns from `student_grades`.
+
+```{r}
+# Enrolled students (have grades)
+enrolled_students <- semi_join(students_demographics, student_grades, by = "student_id")
+print(enrolled_students)
+
+# Students without grades
+students_without_grades <- anti_join(students_demographics, student_grades, by = "student_id")
+print(students_without_grades)
+
+# Grades without students
+grades_without_students <- anti_join(student_grades, students_demographics, by = "student_id")
+print(grades_without_students)
+```
+
+### Short Answer
+Describe the distinct insights gained from each of the three filtering joins in this task. How do these joins help in data validation and understanding the completeness of your student records?
+
+semi_join() shows students with grades, anti_join() on demographics shows students missing grades, and anti_join() on grades finds unmatched records. These joins help validate data and reveal gaps or errors in student records.
+
+
+
